@@ -118,8 +118,11 @@
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
 
         require(['vs/editor/editor.main'], function () {
+            // Load saved content from localStorage or use default
+            const savedContent = localStorage.getItem('jsonFormatterContent') || '{"json": "is", "awesome":      "but", "sometimes": "messy"}';
+
             var editor = monaco.editor.create(document.getElementById('container'), {
-                value: '{"json": "is", "awesome":      "but", "sometimes": "messy"}',
+                value: savedContent,
                 language: 'json',
                 theme: 'vs-dark',
                 automaticLayout: true,
@@ -189,6 +192,8 @@
 
             editor.onDidChangeModelContent(() => {
                 validateJSON();
+                // Save content to localStorage
+                localStorage.setItem('jsonFormatterContent', editor.getValue());
             });
 
             // Initial check
