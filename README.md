@@ -20,7 +20,7 @@ Simply open the `index.html` file in any modern web browser.
 
 ```bash
 # Clone the repo
-git clone https://github.com/miftahafina/your-repo-name.git
+git clone https://github.com/miftahafina/json-formatter.git
 
 # Open the file
 open index.html # on macOS
