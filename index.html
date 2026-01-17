@@ -49,6 +49,11 @@
             justify-content: space-between;
         }
 
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
         button {
             padding: 5px 15px;
             background-color: #0e639c;
@@ -60,6 +65,14 @@
 
         button:hover {
             background-color: #1177bb;
+        }
+
+        #undoBtn, #redoBtn {
+            background-color: transparent;
+        }
+
+        #undoBtn:hover, #redoBtn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         #container {
@@ -84,7 +97,11 @@
 
 <body>
     <div id="toolbar">
-        <button id="formatBtn">Format JSON</button>
+        <div class="button-group">
+            <button id="formatBtn">Format JSON</button>
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
+        </div>
         <label
             style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
             <input type="checkbox" id="wordWrapCheckbox">
@@ -111,6 +128,14 @@
 
             document.getElementById('formatBtn').addEventListener('click', function () {
                 editor.getAction('editor.action.formatDocument').run();
+            });
+
+            document.getElementById('undoBtn').addEventListener('click', function () {
+                editor.trigger('', 'undo');
+            });
+
+            document.getElementById('redoBtn').addEventListener('click', function () {
+                editor.trigger('', 'redo');
             });
 
             // Word Wrap Toggle
