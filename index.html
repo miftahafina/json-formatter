@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Formatter - Offline Ready Monaco Editor</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="A simple and lightweight JSON formatter and validator built with Monaco Editor. Features dark theme, auto-formatting, and real-time validation.">
+    <meta name="keywords"
+        content="JSON Formatter, JSON Validator, Monaco Editor, Offline JSON Tool, Dark Theme, JSON Pretty Print">
+    <meta name="author" content="Miftah Afina">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="JSON Formatter - Offline Ready Monaco Editor">
+    <meta property="og:description"
+        content="A simple and lightweight JSON formatter and validator built with Monaco Editor.">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="JSON Formatter - Offline Ready Monaco Editor">
+    <meta property="twitter:description"
+        content="A simple and lightweight JSON formatter and validator built with Monaco Editor.">
+
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1e1e1e;
+            /* Matches vs-dark background */
+            display: flex;
+            flex-direction: column;
+        }
+
+        #toolbar {
+            padding: 10px;
+            background-color: #252526;
+            color: white;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        button {
+            padding: 5px 15px;
+            background-color: #0e639c;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        button:hover {
+            background-color: #1177bb;
+        }
+
+        #container {
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        #statusbar {
+            padding: 5px 10px;
+            background-color: #007acc;
+            /* Default valid color */
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 13px;
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toolbar">
+        <button id="formatBtn">Format JSON</button>
+        <label
+            style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+            <input type="checkbox" id="wordWrapCheckbox">
+            Word Wrap
+        </label>
+    </div>
+    <div id="container"></div>
+    <div id="statusbar">JSON Valid</div>
+
+    <!-- Load Monaco Editor from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+
+        require(['vs/editor/editor.main'], function () {
+            var editor = monaco.editor.create(document.getElementById('container'), {
+                value: '{"json": "is", "awesome":      "but", "sometimes": "messy"}',
+                language: 'json',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                formatOnPaste: true,
+                formatOnType: true
+            });
+
+            document.getElementById('formatBtn').addEventListener('click', function () {
+                editor.getAction('editor.action.formatDocument').run();
+            });
+
+            // Word Wrap Toggle
+            document.getElementById('wordWrapCheckbox').addEventListener('change', function () {
+                editor.updateOptions({ wordWrap: this.checked ? 'on' : 'off' });
+            });
+
+            // Validation Logic
+            const statusbar = document.getElementById('statusbar');
+
+            function validateJSON() {
+                const value = editor.getValue();
+                if (!value.trim()) {
+                    statusbar.textContent = 'Ready';
+                    statusbar.style.backgroundColor = '#007acc';
+                    return false;
+                }
+
+                try {
+                    JSON.parse(value);
+                    statusbar.textContent = 'JSON is valid';
+                    statusbar.style.backgroundColor = '#007acc'; // Blue for valid
+                    return true;
+                } catch (e) {
+                    statusbar.textContent = 'JSON is invalid / ngawur';
+                    statusbar.style.backgroundColor = '#d32f2f'; // Red for invalid
+                    return false;
+                }
+            }
+
+            // Auto-format on paste if valid
+            editor.onDidPaste(() => {
+                const isValid = validateJSON();
+                if (isValid) {
+                    // Small delay to ensure content is ready (though onDidPaste should be enough, formatDocument is async-ish)
+                    setTimeout(() => {
+                        editor.getAction('editor.action.formatDocument').run();
+                    }, 50);
+                }
+            });
+
+            editor.onDidChangeModelContent(() => {
+                validateJSON();
+            });
+
+            // Initial check
+            validateJSON();
+        });
+    </script>
+</body>
+
+</html>
