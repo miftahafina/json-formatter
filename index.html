@@ -141,8 +141,7 @@
 <body>
     <div id="toolbar">
         <div class="button-group">
-            <button id="formatBtn">Format JSON</button>
-            <button id="undoBtn">Undo</button>
+            <button id="formatBtn">Format JSON</button>            <button id="minifyBtn">Minify JSON</button>            <button id="undoBtn">Undo</button>
             <button id="redoBtn">Redo</button>
             <button id="copyBtn">Copy All</button>
         </div>
@@ -196,6 +195,17 @@
 
             document.getElementById('formatBtn').addEventListener('click', function () {
                 editor.getAction('editor.action.formatDocument').run();
+            });
+
+            document.getElementById('minifyBtn').addEventListener('click', function () {
+                const value = editor.getValue();
+                try {
+                    const parsed = JSON.parse(value);
+                    const minified = JSON.stringify(parsed);
+                    editor.setValue(minified);
+                } catch (e) {
+                    alert('Invalid JSON: Cannot minify');
+                }
             });
 
             document.getElementById('undoBtn').addEventListener('click', function () {
