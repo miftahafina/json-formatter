@@ -74,11 +74,23 @@
             background-color: #1177bb;
         }
 
-        #undoBtn, #redoBtn, #copyBtn {
+        #undoBtn,
+        #redoBtn,
+        #copyBtn {
             background-color: transparent;
         }
 
-        #undoBtn:hover, #redoBtn:hover, #copyBtn:hover {
+        #copyBtn {
+            transition: opacity 0.3s ease;
+        }
+
+        #copyBtn.fade {
+            opacity: 0;
+        }
+
+        #undoBtn:hover,
+        #redoBtn:hover,
+        #copyBtn:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
 
@@ -123,12 +135,16 @@
             background-color: #005a9e;
         }
 
-        body.light-theme #undoBtn, body.light-theme #redoBtn, body.light-theme #copyBtn {
+        body.light-theme #undoBtn,
+        body.light-theme #redoBtn,
+        body.light-theme #copyBtn {
             background-color: transparent;
             color: black;
         }
 
-        body.light-theme #undoBtn:hover, body.light-theme #redoBtn:hover, body.light-theme #copyBtn:hover {
+        body.light-theme #undoBtn:hover,
+        body.light-theme #redoBtn:hover,
+        body.light-theme #copyBtn:hover {
             background-color: rgba(0, 0, 0, 0.1);
         }
 
@@ -141,7 +157,8 @@
 <body>
     <div id="toolbar">
         <div class="button-group">
-            <button id="formatBtn">Format JSON</button>            <button id="minifyBtn">Minify JSON</button>            <button id="undoBtn">Undo</button>
+            <button id="formatBtn">Format JSON</button> <button id="minifyBtn">Minify JSON</button> <button
+                id="undoBtn">Undo</button>
             <button id="redoBtn">Redo</button>
             <button id="copyBtn">Copy All</button>
         </div>
@@ -151,7 +168,8 @@
                 <input type="checkbox" id="wordWrapCheckbox">
                 Word Wrap
             </label>
-            <button id="themeToggle" style="background-color: transparent; border: none; cursor: pointer; font-size: 16px; padding: 5px;">🌙</button>
+            <button id="themeToggle"
+                style="background-color: transparent; border: none; cursor: pointer; font-size: 16px; padding: 5px;">🌙</button>
         </div>
     </div>
     <div id="container"></div>
@@ -216,10 +234,26 @@
                 editor.trigger('', 'redo');
             });
 
-            document.getElementById('copyBtn').addEventListener('click', function () {
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.addEventListener('click', function () {
                 navigator.clipboard.writeText(editor.getValue()).then(() => {
-                    // Optional: show feedback
-                    console.log('Copied to clipboard');
+                    // Fade out
+                    copyBtn.classList.add('fade');
+
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copied';
+                        copyBtn.classList.remove('fade');
+
+                        // After 3 seconds, fade back to "Copy All"
+                        setTimeout(() => {
+                            copyBtn.classList.add('fade');
+
+                            setTimeout(() => {
+                                copyBtn.textContent = 'Copy All';
+                                copyBtn.classList.remove('fade');
+                            }, 300);
+                        }, 3000);
+                    }, 300);
                 }).catch(err => {
                     console.error('Failed to copy: ', err);
                 });
