@@ -210,6 +210,34 @@
             const metaThemeColor = document.querySelector('meta[name="theme-color"]');
             metaThemeColor.setAttribute('content', isDark ? '#252526' : '#f3f3f3');
 
+            function alignText(text) {
+                const lines = text.split('\n');
+                if (lines.length < 2) return text;
+                const separators = [':', '=', '=>', '->'];
+                let bestSep = '';
+                let maxCount = 0;
+                for (const sep of separators) {
+                    const count = lines.filter(l => l.includes(sep)).length;
+                    if (count > maxCount) { maxCount = count; bestSep = sep; }
+                }
+                if (!bestSep || maxCount === 0) return text;
+                const parts = lines.map(line => {
+                    const idx = line.indexOf(bestSep);
+                    if (idx === -1) return { left: line, right: '', sep: '' };
+                    return {
+                        left: line.substring(0, idx).trimEnd(),
+                        right: line.substring(idx + bestSep.length).trim(),
+                        sep: bestSep
+                    };
+                });
+                const maxLeftWidth = Math.max(...parts.map(p => p.left.length));
+                return parts.map(p => {
+                    if (!p.sep) return p.left;
+                    const padding = ' '.repeat(maxLeftWidth - p.left.length);
+                    return `${p.left}${padding} ${p.sep} ${p.right}`;
+                }).join('\n');
+            }
+
             var editor = monaco.editor.create(document.getElementById('container'), {
                 value: savedContent,
                 language: 'json',
@@ -217,6 +245,20 @@
                 automaticLayout: true,
                 formatOnPaste: true,
                 formatOnType: true
+            });
+
+            editor.addAction({
+                id: 'better-align',
+                label: 'Better Align',
+                keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyA],
+                contextMenuGroupId: '1_modification',
+                run: function (ed) {
+                    const selection = ed.getSelection();
+                    if (!selection || selection.isEmpty()) return;
+                    const text = ed.getModel().getValueInRange(selection);
+                    const aligned = alignText(text);
+                    ed.executeEdits('better-align', [{ range: selection, text: aligned, forceMoveMarkers: true }]);
+                }
             });
 
             document.getElementById('formatBtn').addEventListener('click', function () {
