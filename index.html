@@ -516,16 +516,21 @@
 
                     // Click to switch
                     tabEl.addEventListener('click', () => {
-                        switchTab(tab.id);
+                        if (tab.id !== activeTabId) {
+                            switchTab(tab.id);
+                        }
                     });
 
-                    // Double-click to rename
+                    // Double-click to rename (only on active tab)
                     tabEl.addEventListener('dblclick', (e) => {
                         e.stopPropagation();
+                        if (tab.id !== activeTabId) return;
+                        const currentNameEl = tabEl.querySelector('.tab-name');
+                        if (!currentNameEl) return;
                         const input = document.createElement('input');
                         input.className = 'tab-name-input';
                         input.value = tab.name;
-                        nameEl.replaceWith(input);
+                        currentNameEl.replaceWith(input);
                         input.focus();
                         input.select();
 
