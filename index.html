@@ -221,6 +221,31 @@
             flex-grow: 1;
         }
 
+        #jsonpath {
+            padding: 4px 12px;
+            background-color: #252526;
+            color: #858585;
+            font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-top: 1px solid #1a1a1a;
+        }
+
+        #jsonpath span.path-separator {
+            color: #555;
+            margin: 0 4px;
+        }
+
+        #jsonpath span.path-key {
+            color: #9cdcfe;
+        }
+
+        #jsonpath span.path-index {
+            color: #b5cea8;
+        }
+
         #statusbar {
             padding: 5px 10px;
             background-color: #007acc;
@@ -301,6 +326,24 @@
         body.light-theme #themeToggle:hover {
             background-color: rgba(0, 0, 0, 0.1);
         }
+
+        body.light-theme #jsonpath {
+            background-color: #f8f8f8;
+            color: #6e6e6e;
+            border-top-color: #e0e0e0;
+        }
+
+        body.light-theme #jsonpath span.path-separator {
+            color: #aaa;
+        }
+
+        body.light-theme #jsonpath span.path-key {
+            color: #0451a5;
+        }
+
+        body.light-theme #jsonpath span.path-index {
+            color: #098658;
+        }
     </style>
 </head>
 
@@ -335,6 +378,7 @@
         <button id="newTabBtn" class="new-tab-btn" title="New Tab">+</button>
     </div>
     <div id="container"></div>
+    <div id="jsonpath">Path: <span class="path-key">root</span></div>
     <div id="statusbar">JSON Valid</div>
 
     <!-- Load Monaco Editor from CDN -->
@@ -681,6 +725,131 @@
                         editor.getAction('editor.action.formatDocument').run();
                     }, 50);
                 }
+            });
+
+            // ===== JSON Path =====
+            const jsonpathEl = document.getElementById('jsonpath');
+
+            function getJsonPathAtOffset(text, offset) {
+                const path = [];
+                let i = 0;
+                const len = text.length;
+                let currentKey = null;
+                const stack = []; // 'object' or 'array'
+                const arrayIndices = [];
+                const depthStack = []; // path.length at each { or [
+
+                function skipWhitespace() {
+                    while (i < len && (text[i] === ' ' || text[i] === '\t' || text[i] === '\n' || text[i] === '\r')) i++;
+                }
+
+                function readString() {
+                    i++; // skip opening "
+                    const start = i;
+                    while (i < len) {
+                        if (text[i] === '\\') { i += 2; continue; }
+                        if (text[i] === '"') break;
+                        i++;
+                    }
+                    const str = text.substring(start, i);
+                    i++; // skip closing "
+                    return str;
+                }
+
+                while (i < len && i < offset) {
+                    skipWhitespace();
+                    if (i >= offset) break;
+                    const ch = text[i];
+
+                    if (ch === '{') {
+                        if (stack.length > 0 && stack[stack.length - 1] === 'array') {
+                            path.push({ type: 'index', value: arrayIndices[arrayIndices.length - 1] });
+                        }
+                        depthStack.push(path.length);
+                        stack.push('object');
+                        arrayIndices.push(0);
+                        i++;
+                    } else if (ch === '[') {
+                        if (stack.length > 0 && stack[stack.length - 1] === 'array') {
+                            path.push({ type: 'index', value: arrayIndices[arrayIndices.length - 1] });
+                        }
+                        depthStack.push(path.length);
+                        stack.push('array');
+                        arrayIndices.push(0);
+                        i++;
+                    } else if (ch === '}' || ch === ']') {
+                        stack.pop();
+                        arrayIndices.pop();
+                        const targetDepth = depthStack.pop();
+                        while (path.length > targetDepth) path.pop();
+                        i++;
+                    } else if (ch === ',') {
+                        if (stack.length > 0 && stack[stack.length - 1] === 'object') {
+                            // Pop current key
+                            const targetDepth = depthStack[depthStack.length - 1];
+                            while (path.length > targetDepth) path.pop();
+                        } else if (stack.length > 0 && stack[stack.length - 1] === 'array') {
+                            // Pop previous element entries, increment index
+                            const targetDepth = depthStack[depthStack.length - 1];
+                            while (path.length > targetDepth) path.pop();
+                            arrayIndices[arrayIndices.length - 1]++;
+                        }
+                        currentKey = null;
+                        i++;
+                    } else if (ch === ':') {
+                        if (currentKey !== null) {
+                            path.push({ type: 'key', value: currentKey });
+                            currentKey = null;
+                        }
+                        i++;
+                    } else if (ch === '"') {
+                        const str = readString();
+                        if (i < len) {
+                            const savedI = i;
+                            skipWhitespace();
+                            if (i < len && text[i] === ':') {
+                                currentKey = str;
+                            }
+                            i = savedI;
+                        }
+                    } else {
+                        i++;
+                    }
+                }
+
+                // Add trailing context
+                if (currentKey !== null) {
+                    path.push({ type: 'key', value: currentKey });
+                } else if (stack.length > 0 && stack[stack.length - 1] === 'array') {
+                    path.push({ type: 'index', value: arrayIndices[arrayIndices.length - 1] });
+                }
+
+                return path;
+            }
+
+            function updateJsonPath() {
+                const position = editor.getPosition();
+                if (!position) return;
+                const model = editor.getModel();
+                if (!model) return;
+                const offset = model.getOffsetAt(position);
+                const text = model.getValue();
+                const path = getJsonPathAtOffset(text, offset);
+
+                let html = 'Path: <span class="path-key">root</span>';
+                path.forEach(p => {
+                    html += '<span class="path-separator">›</span>';
+                    if (p.type === 'key') {
+                        html += `<span class="path-key">${p.value}</span>`;
+                    } else {
+                        html += `<span class="path-index">[${p.value}]</span>`;
+                    }
+                });
+                jsonpathEl.innerHTML = html;
+            }
+
+            editor.onDidChangeCursorPosition(() => {
+                updateJsonPath();
             });
 
             // ===== Initialize Tabs =====
